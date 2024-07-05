@@ -108,4 +108,4 @@ rezaiefar = rezaiefar_det(matrix=matrix)
 
 print(f"Laplace Expansion : {laplace}")
 print(f"Gauss-Jordan Elimination : {gauss_jordan}")
-print(f"Rezaiefar Algorithm : {gauss_jordan}")
+print(f"Rezaiefar Algorithm : {rezaiefar}")
