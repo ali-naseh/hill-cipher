@@ -80,7 +80,7 @@ class HillCipherApp(tk.Tk):
         numbers = self.convert_text_to_num(plaintext)
         
         while len(numbers) % size != 0:
-            numbers.append(ord('Z') - ord('A')) 
+            numbers.append(ord('X') - ord('A')) 
         
         cipher_numbers = []
         for i in range(0, len(numbers), size):
