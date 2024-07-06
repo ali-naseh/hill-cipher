@@ -27,13 +27,29 @@ class HillCipherApp(tk.Tk):
     def convert_num_to_text(self, numbers):
         return ''.join(chr(num + ord('A')) for num in numbers)
     
+    def get_matrix_minor(self, matrix, i, j):
+        return [row[:j] + row[j+1:] for row in (matrix[:i] + matrix[i+1:])]
+    
     def get_inverse_matrix(self, matrix, modulus):
-        det = int(np.round(determinant(matrix)))
+        size = len(matrix)
+        det = int(round(determinant(matrix)))  # Ensure det is an integer
         det_inv = pow(det, -1, modulus)
-        matrix_mod_inv = (
-            det_inv * np.round(det * np.linalg.inv(matrix)).astype(int) % modulus
-        )
-        return matrix_mod_inv
+        cofactors = []
+
+        for r in range(size):
+            cofactor_row = []
+            for c in range(size):
+                minor = self.get_matrix_minor(matrix, r, c)
+                cofactor = determinant(minor)
+                cofactor_row.append(((-1) ** (r + c) * cofactor) % modulus)
+            cofactors.append(cofactor_row)
+
+        cofactors = list(map(list, zip(*cofactors)))  # Transpose the matrix
+        for r in range(size):
+            for c in range(size):
+                cofactors[r][c] = (cofactors[r][c] * det_inv) % modulus
+
+        return cofactors
 
     # processes the key input to form the key matrix
     def get_key_matrix(self, key_str):
