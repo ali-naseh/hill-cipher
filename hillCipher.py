@@ -19,17 +19,17 @@ class HillCipherApp(tk.Tk):
         main_page.pack(fill=tk.BOTH, expand=True)
         self.current_frame = main_page
 
-    # converts text into numerical representation (A=0, B=1, ..., Z=25)
+    # converts text into numerical representation (A=0, B=1, ..., Z=25, _=26)
     def convert_text_to_num(self, text):
-        return [ord(char) - ord('A') for char in text.upper() if char.isalpha()]
+        return [ord(char) - ord('A') if char.isalpha() else 26 if char == " " or char == '_' else messagebox.showerror("Error", "Just alphabets and space are acceptable.") for char in text.upper()]
 
-    # convert numerical representation back to text.
+    # convert numerical representation back to text (0=A, 1=B, ..., 25=Z, 26=_)
     def convert_num_to_text(self, numbers):
-        return ''.join(chr(num + ord('A')) for num in numbers)
-    
+        return ''.join(chr(int(num) + ord('A')) if int(num) < 26 else '_' for num in numbers)
+
     def get_matrix_minor(self, matrix, i, j):
         return [row[:j] + row[j+1:] for row in (matrix[:i] + matrix[i+1:])]
-    
+
     def get_inverse_matrix(self, matrix, modulus):
         size = len(matrix)
         det = int(round(determinant(matrix)))  # Ensure det is an integer
@@ -44,7 +44,7 @@ class HillCipherApp(tk.Tk):
                 cofactor_row.append(((-1) ** (r + c) * cofactor) % modulus)
             cofactors.append(cofactor_row)
 
-        cofactors = list(map(list, zip(*cofactors)))  # Transpose the matrix
+        cofactors = list(map(list, zip(*cofactors))) 
         for r in range(size):
             for c in range(size):
                 cofactors[r][c] = (cofactors[r][c] * det_inv) % modulus
@@ -57,43 +57,40 @@ class HillCipherApp(tk.Tk):
         n = int(len(key_numbers) ** 0.5)
         
         if n * n != len(key_numbers):
-            messagebox.showerror("Error", "The key matrix should be nxn.")
+            messagebox.showerror("Error", "NOT VALID KEY")
             return None
         
-        key_matrix = np.array(key_numbers).reshape(n, n)
-        det = int(np.round(determinant(key_matrix)))
+        key_matrix = [key_numbers[i * n:(i + 1) * n] for i in range(n)]
+        det = int(round(determinant(key_matrix)))  # Ensure det is an integer
         
-        if det == 0 or np.gcd(det, 26) != 1:
+        if det == 0 or np.gcd(det, 27) != 1: 
             messagebox.showerror("Error", "The key matrix is not invertible.")
             return None
         
         self.key_matrix = key_matrix
         return key_matrix
 
-
     def encrypt(self, plaintext):
         if self.key_matrix is None:
             messagebox.showerror("Error", "The key matrix is not set.")
             return ""
 
-        size = self.key_matrix.shape[0]
+        size = len(self.key_matrix)
         numbers = self.convert_text_to_num(plaintext)
         
-        while len(numbers) % size != 0:
-            numbers.append(ord('Z') - ord('A')) 
+        while (len(numbers) % size) != 0:
+            numbers.append(26)  # Adding '_' for padding 
         
         cipher_numbers = []
         for i in range(0, len(numbers), size):
-            block = np.array(numbers[i:i + size])
-            cipher_block = np.dot(self.key_matrix, block) % 26
+            block = numbers[i:i + size]
+            cipher_block = [(sum(self.key_matrix[row][k] * block[k] for k in range(size)) % 27) for row in range(size)] 
             cipher_numbers.extend(cipher_block)
         
         ciphertext = self.convert_num_to_text(cipher_numbers)
         
-        # prepare message to be shown
         key_matrix_str = f"Key Matrix:\n{self.key_matrix}"
-        text_matrix_str = f"Text Matrix:\n[{', '.join(map(str, numbers[i:i + size]))}]"
-        message = f"Encrypted Text:\n{ciphertext}\n\n{key_matrix_str}\n\n{text_matrix_str}"
+        message = f"Encrypted Text:\n{ciphertext}\n\n{key_matrix_str}"
         
         messagebox.showinfo("Encryption Result", message)
         
@@ -104,24 +101,23 @@ class HillCipherApp(tk.Tk):
             messagebox.showerror("Error", "Key matrix is not set.")
             return ""
 
-        size = self.key_matrix.shape[0]
-        key_matrix_inv = np.round(self.get_inverse_matrix(self.key_matrix, 26)).astype(int)
+        size = len(self.key_matrix)
+        key_matrix_inv = self.get_inverse_matrix(self.key_matrix, 27)
         
         cipher_numbers = self.convert_text_to_num(ciphertext)
         plaintext_numbers = []
         
         for i in range(0, len(cipher_numbers), size):
-            block = np.array(cipher_numbers[i:i + size])
-            plaintext_block = np.dot(key_matrix_inv, block) % 26
+            block = cipher_numbers[i:i + size]
+            plaintext_block = [(sum(key_matrix_inv[row][k] * block[k] for k in range(size)) % 27) for row in range(size)] 
             plaintext_numbers.extend(plaintext_block)
         
-        plaintext = self.convert_num_to_text(plaintext_numbers).rstrip('X')
+        plaintext = self.convert_num_to_text(plaintext_numbers).rstrip('_')  # Removing trailing '_'
         
         # prepare message to be shown
         key_matrix_str = f"Key Matrix:\n{self.key_matrix}"
         inverse_key_matrix_str = f"Inverse Key Matrix:\n{key_matrix_inv}"
-        text_matrix_str = f"Ciphertext Matrix:\n[{', '.join(map(str, cipher_numbers[i:i + size]))}]" 
-        message = f"Decrypted Text:\n{plaintext}\n\n{key_matrix_str}\n\n{inverse_key_matrix_str}\n\n{text_matrix_str}"
+        message = f"Decrypted Text:\n{plaintext}\n\n{key_matrix_str}\n\n{inverse_key_matrix_str}"
         
         messagebox.showinfo("Decryption Result", message)
         
@@ -136,7 +132,7 @@ class MainPage(tk.Frame):
 
         tk.Label(self, text="Hill Cipher Algorithm", bg='#c8c9bd', font=("Arial", 14)).pack(pady=10)
 
-        self.key_entry_label = tk.Label(self, text="Enter Key Matrix (comma-separated numbers):", bg='#c8c9bd')
+        self.key_entry_label = tk.Label(self, text="Enter Key Matrix (comma-separated numbers):\nexp: [[1,2][3,4]] is 1,2,3,4", bg='#c8c9bd')
         self.key_entry_label.pack(pady=5)
         self.key_entry = tk.Entry(self)
         self.key_entry.pack(pady=5)

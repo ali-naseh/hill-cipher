@@ -101,7 +101,7 @@ def rezaiefar_det(matrix):
 
 
 #Result
-matrix = [[1, 0, 2],[4, 0, 1],[1, 1, 2]]
+matrix = [[1, 3],[6,8]]
 laplace = laplace_det(matrix=matrix)
 gauss_jordan = gauss_jordan_det(matrix=matrix)
 rezaiefar = rezaiefar_det(matrix=matrix)
