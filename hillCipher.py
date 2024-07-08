@@ -1,7 +1,7 @@
 import numpy as np
 import tkinter as tk
 from tkinter import messagebox
-from determinant import gauss_jordan_det as determinant
+from gauss_jordan import gauss_jordan_det as determinant
 
 class HillCipherApp(tk.Tk):
     def __init__(self):
